@@ -1,0 +1,110 @@
+using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Windows.Forms;
+
+namespace TCPIPDemo
+{
+    public partial class Form1 : Form
+    {
+        private UdpClient server;
+        private IPEndPoint remoteIP;
+        private int remotePort = 54321;
+        private int port = 4321;
+
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                server = new UdpClient(port);
+                remoteIP = new IPEndPoint(IPAddress.Parse("127.0.0.1"), remotePort);
+                server.BeginReceive(new AsyncCallback(OnReceive), null);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error: " + ex.Message);
+            }
+        }
+
+        private void OnReceive(IAsyncResult ar)
+        {
+            try
+            {
+                IPEndPoint receivedIP = new IPEndPoint(IPAddress.Any, 0);
+                byte[] buffer = server.EndReceive(ar, ref receivedIP);
+                server.BeginReceive(new AsyncCallback(OnReceive), null);
+
+                if (receivedIP.ToString() == remoteIP.ToString())
+                {
+                    ControlInvoke(txtInMsg, () => txtInMsg.AppendText(":>>  " + Encoding.ASCII.GetString(buffer) + Environment.NewLine));
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // Handle ObjectDisposedException if the socket is closed
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error: " + ex.Message);
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                server.Connect(remoteIP);
+                server.Send(Encoding.ASCII.GetBytes(txtMSG.Text), txtMSG.Text.Length);
+                txtMSG.Clear();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error: " + ex.Message);
+            }
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            server.Close();
+        }
+
+        private delegate void ControlInvokeDelegate(Control control, Action function);
+
+        private void ControlInvoke(Control control, Action function)
+        {
+            if (control.InvokeRequired)
+            {
+                control.Invoke(new ControlInvokeDelegate(ControlInvoke), control, function);
+                return;
+            }
+            function();
+        }
+
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+        private void label2_Click(object sender, EventArgs e)
+        {
+
+
+        }
+        private void textBox2_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+
+    }
+}
